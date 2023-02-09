@@ -130,12 +130,41 @@ app.MapGet("{first:alpha:length(4)}/{second:bool}", async context =>
 app.MapFallback(async context =>
 {
     await context.Response.WriteAsync($"{StatusCodes.Status404NotFound}");
-});
+}).WithDisplayName("Fallback Endpoint");
 
 #endregion
 
+#region Ambiguous Routing
+
+app.MapGet("{number:int}", async context =>
+{
+    await context.Response.WriteAsync("Routed with int number");
+}).WithDisplayName("Int Endpoint")
+  .Add(b => ((RouteEndpointBuilder)b).Order = 1);
+
+app.MapGet("{numbr:double}", async context =>
+{
+    await context.Response.WriteAsync("Routed with double number");
+}).WithDisplayName("Double endpoint")
+  .Add(b => ((RouteEndpointBuilder)b).Order = 2);
 
 
+#endregion
 
+#region Acessing the Endpoint in a Middleware Component
+
+app.Use(async (context, next) =>
+{
+    Endpoint? end = context.GetEndpoint();
+
+    if (end != null)
+        await context.Response.WriteAsync($"{end.DisplayName} Selected \n");
+    else
+        await context.Response.WriteAsync("No Endpoint Selected! \n");
+
+    await next();
+});
+
+#endregion
 
 app.Run();
